@@ -35,28 +35,6 @@
 *.xml
 *.zip
 
-# possible output files
-*.docx
-*.doc
-*.html
-*.htm
-*.log
-*.pdf
-*.pptx
-*.ppt
-*.rtf
-*.thmx
-*.txt
-
-# image files
-*.ai
-*.emf
-*.jpeg
-*.jpg
-*.png
-*.svg
-*.tiff
-*.tif
 
 # media files
 *.dcf
