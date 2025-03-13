@@ -1,0 +1,481 @@
+---
+format:
+  html:
+    footnotes-hover: false
+    css: styles.css
+    toc: true
+    toc-title: On this page
+    toc-location: left
+mainfont: "GT-America"
+linkcolor: "#00355a"
+execute:
+  warning: false
+  message: false
+---
+
+
+## Variables to Explore
+
+**Recidivism:**
+
+* *inc_to_inc_recid_y1*: Incarceration to incarceration recidivism within one year
+
+* *inc_to_inc_recid_y2*: Incarceration to incarceration recidivism within two years
+
+* *inc_to_inc_recid_y3*: Incarceration to incarceration recidivism within three years
+
+* *inc_to_inc_recid_y4*: Incarceration to incarceration recidivism within four years
+
+* *inc_to_inc_recid_y5*: Incarceration to incarceration recidivism within five years
+
+<br>
+
+**Employment:**
+
+*Poverty*
+
+* *inc_above_poverty_y1*: Proportion of individuals above poverty, one year after release from prison
+
+* *inc_above_poverty_y3*: Proportion of individuals above poverty, three years after release from
+prison
+
+* *inc_above_poverty_y5*: Proportion of individuals above poverty, five years after release from
+prison
+
+*W2*
+
+* *inc_any_w2_y1*: Proportion of individuals with at least one W2 filed, one year after release from
+prison
+
+* *inc_any_w2_y3*: Proportion of individuals with at least one W2 filed, three years after release from
+prison
+
+* *inc_any_w2_y5*: Proportion of individuals with at least one W2 filed, five years after release from
+prison
+
+*Wages*
+
+* *inc_w2_wages_y1*: Income of individuals, one year after release from prison
+
+* *inc_w2_wages_y3*: Income of individuals, three years after release from prison
+
+* *inc_w2_wages_y5*: Income of individuals, five years after release from prison
+
+<br>
+
+**Housing**
+
+* *inc_hud_y1*: Proportion of individuals that received HUD rental housing assistance, one year after release from prison
+
+* *inc_hud_y3*: Proportion of individuals that received HUD rental housing assistance, three years after release from prison
+
+* *inc_hud_y5*: Proportion of individuals that received HUD rental housing assistance, five years after release from prison
+
+<br>
+
+**Healthcare**
+
+*SSI*
+
+* *inc_ssi_y1*: Proportion of individuals who received SSI, one year after release from prison
+
+* *inc_ssi_y3*: Proportion of individuals who received SSI, three years after release from prison
+
+* *inc_ssi_y5*: Proportion of individuals who received SSI, five years after release from prison
+
+*Medicaid*
+
+* *inc_medicaid_y1*: Proportion of individuals enrolled in Medicaid, one year after release from prison
+
+* *inc_medicaid_y3*: Proportion of individuals enrolled in Medicaid, three years after release from
+prison
+
+* *inc_medicaid_y5*: Proportion of individuals enrolled in Medicaid, five years after release from
+prison
+
+*Medicare*
+
+* *inc_medicare_y1*: Proportion of individuals enrolled in Medicare, one year after release from prison
+
+* *inc_medicare_y3*: Proportion of individuals enrolled in Medicare, three years after release from
+prison
+
+* *inc_medicare_y5*: Proportion of individuals enrolled in Medicare, five years after release from
+prison
+
+*Mortality*
+
+* *inc_mortality_y1*: Proportion of individuals who have passed away, one year after release from
+prison
+
+* *inc_mortality_y3*: Proportion of individuals who have passed away, three years after release
+from prison
+
+* *inc_mortality_y5*: Proportion of individuals who have passed away, five years after release from
+
+
+## Call libraries and set paths
+
+```{r}
+# ### install version of highcharter that is compatible with our accessibility requirements 
+# remotes::install_github("jbkunst/highcharter", ref = remotes::github_pull(780))
+
+library(tidyverse)
+library(scales)
+library(csgjcr)
+library(highcharter)
+library(htmlwidgets)
+library(reactable)
+library(reactablefmtr)
+library(sf)
+library(janitor)
+library(tidycensus)
+
+```
+
+```{r}
+# ### set project path (only need to run once)
+# csg_set_project_path(project = "reentry_2030_cjars",
+#                      sp_folder = "C:/Users/abyrum/OneDrive/The Council of State Governments/JC Research - Documents/CRD_Reentry 2030",
+#                      force = TRUE)
+
+### pull overall reentry 2030 folder path -- that we set in above script
+reentry_2030_cjars <- csg_get_project_path("reentry_2030_cjars")
+
+### set path for importing raw cjars data
+reentry_2030_cjars_raw <- file.path(reentry_2030_cjars,
+                                    "Background",
+                                    "CJARS Documentation")
+
+
+### set path for exporting clean cjars data
+reentry_2030_cjars_clean <- file.path(reentry_2030_cjars,
+                                      "Data",
+                                      "CJARS",
+                                      "Clean")
+
+### create list of reentry states to include in analysis
+### based on 6 states listed here: https://reentry2030.org/
+### NOTE: Missouri and Alabama appear to be missing from file (29 and 01)
+### so I've excluded them from the list 
+reentry_states_to_include <- c("36", "53", "37", "31")
+```
+
+<br>
+
+## Clean state-level data
+
+```{r }
+### import state_data.csv
+### file note: confirm that file is aggregated by fips, cohort_year, sex, race, age_group, off_type, and repeat_contact
+df_cjars_q3_state_raw <- readr::read_csv(file.path(reentry_2030_cjars_raw,
+                                            "2023Q3_state_delim", 
+                                            "state_delim",
+                                            "state_data.csv")) |> 
+  ### add state name using fips code
+  mutate(state_name = csgjcr::csg_state_convert(fips,
+                                                from = "fips",
+                                                to = "name"),
+         state_abbr = csgjcr::csg_state_convert(fips,
+                                                from = "fips",
+                                                to = "abbr"),
+         ### create flag for reentry states/non-reentry states 
+         reentry_state_flag = ifelse(fips%in%reentry_states_to_include,
+                                     "Reentry 2030 States","Non-Reentry 2030 States")) |>
+  ### reorder state_name after fips
+  ### and just keep variables of interest
+  ### including one sample size var per data series
+  dplyr::select(fips, 
+                state_name, 
+                state_abbr,
+                reentry_state_flag,
+                cohort_year:repeat_contact,
+                N_inc_to_inc_recid_y1,
+                inc_to_inc_recid_y1,
+                inc_to_inc_recid_y2,
+                inc_to_inc_recid_y3,
+                inc_to_inc_recid_y4,
+                inc_to_inc_recid_y5,
+                N_inc_above_poverty_y1,
+                inc_above_poverty_y1,
+                inc_above_poverty_y3,
+                inc_above_poverty_y5,
+                N_inc_any_w2_y1,
+                inc_any_w2_y1,
+                inc_any_w2_y3,
+                inc_any_w2_y5,
+                N_inc_w2_wages_y1,
+                inc_w2_wages_y1,
+                inc_w2_wages_y3,
+                inc_w2_wages_y5,
+                N_inc_hud_y1,
+                inc_hud_y1,
+                inc_hud_y3,
+                inc_hud_y5,
+                N_inc_ssi_y1,
+                inc_ssi_y1,
+                inc_ssi_y3,
+                inc_ssi_y5, 
+                N_inc_medicaid_y1,
+                inc_medicaid_y1,
+                inc_medicaid_y3, 
+                inc_medicaid_y5, 
+                inc_medicare_y1, 
+                inc_medicare_y3, 
+                inc_medicare_y5, 
+                N_inc_mortality_y1,
+                inc_mortality_y1, 
+                inc_mortality_y3, 
+                inc_mortality_y5) |> 
+  ### now clean following grouping vars: sex, race, age_group, off_type, and repeat_contact
+  ### 0 == overall counts for all grouping vars will be NA in clean variable versions
+  
+  ### age
+  ### use factor function to assign labels to values
+   mutate(age_group_clean = factor(age_group,
+         levels = c(1,2,3),
+         labels = c("15-24", 
+                    "25-40", 
+                    "40+")),  
+  ### race/ethnicity
+  race_clean = factor(race,
+         levels = c(1,2,3,4,5),
+         labels = c("White, non-Hispanic",
+                    "Black, non-Hispanic",
+                    "Asian or Pacific Islander, non-Hispanic",
+                    "Hispanic",
+                    "American Indian or Alaska Native")),
+  ### sex
+  sex_clean = factor(sex,
+         levels = c(1,2),
+         labels = c("Male", 
+                    "Female")),
+  ### off_type
+  off_type_clean = factor(off_type,
+         levels = c(1,2,3),
+         labels = c("Violent", 
+                    "Property", 
+                    "Drug")),
+  ### repeat_contact
+  repeat_contact_clean = factor(repeat_contact,
+         levels = c(1,2,3),
+         labels = c("First-time contact only", 
+                    "Repeat contact only",
+                    "All calculated with reweights"))) 
+
+
+### create analytic file with only overall counts and rates
+df_cjars_q3_state_overall_only <- df_cjars_q3_state_raw |> 
+  ### 0 == overall counts for all grouping vars
+  filter(age_group==0,
+         race==0, 
+         sex==0,
+         off_type==0,
+         repeat_contact==0) |> 
+  ### drop clean grouping vars
+  dplyr::select(-c(age_group_clean:repeat_contact_clean))
+
+```
+
+<br>
+
+## Clean county-level data
+
+**Note:** This is just for NC for now -- will need to write a function to loop cleaning over every state and then export rds file. This works if we only use county-level file is for map and table on state page (and don't need comparisons across states)
+
+```{r }
+########################################
+### pull in county fips codes and names
+### for join to county CJARS file
+#######################################
+
+### county-level file
+### from ACS file
+us_county_to_join <- get_acs(
+  geography = "county",
+  variables = "S0101_C01_001",
+  year = 2022,
+  geometry = TRUE,
+  keep_geo_vars = TRUE,
+  cb = TRUE,
+  resolution = "20m") |>
+  clean_names() |>
+  mutate(state_geoid = substr(geoid, 1, 2)) |>
+  ### now drop geometry so that we can use as regular df (and not a spatial object)
+  ### we initially needed geometry in order to extract county name without label (e.g., county, parish, area, etc.)
+  st_drop_geometry() |> 
+  ### finally, keep and rename columns we'll use later
+  dplyr::select(county_fips = geoid,
+                county_name = name_x) |>
+  distinct() 
+
+```
+
+
+```{r }
+### county file is large -- run gc first
+gc()
+
+### import county_data.csv via data.table::fread b/c of file size
+### file note: confirm that file is aggregated by fips, cohort_year, sex, race, age_group, off_type, and repeat_contact
+df_cjars_q3_county_raw <- data.table::fread(file.path(reentry_2030_cjars_raw,
+                                                      "2023Q3_county_delim", 
+                                                      "county_delim",
+                                                      "county_data.csv"),
+                                            verbose=TRUE) |> 
+  ### add leading zeros to fips county code in order to make code 5 digits 
+  ### (when leading zeros are dropped, the code is only four digits -- e.g., Arizona)
+  mutate(county_fips = str_pad(fips, 5, pad = "0"),
+         ### now extract first 2 digits as state fips code
+         state_fips = substr(county_fips,1,2)) |> 
+  ### TEMP: FILTER ON NC ONLY FOR NOW
+  filter(state_fips==37) |> 
+  ### join in county name via fips code (pulling from census data)
+  left_join(us_county_to_join,
+            by = "county_fips") |> 
+  ### add state name using fips code
+  mutate(state_name = csgjcr::csg_state_convert(state_fips,
+                                                from = "fips",
+                                                to = "name"),
+         state_abbr = csgjcr::csg_state_convert(state_fips,
+                                                from = "fips",
+                                                to = "abbr"),
+         ### create flag for reentry states/non-reentry states 
+         reentry_state_flag = ifelse(state_fips%in%reentry_states_to_include,
+                                     "Reentry 2030 States","Non-Reentry 2030 States")) |>
+  ### reorder state_name after fips
+  ### and just keep variables of interest
+  ### including one sample size var per data series
+  dplyr::select(county_fips, 
+                county_name,
+                state_fips,
+                state_name, 
+                state_abbr,
+                reentry_state_flag,
+                cohort_year:repeat_contact,
+                N_inc_to_inc_recid_y1,
+                inc_to_inc_recid_y1,
+                inc_to_inc_recid_y2,
+                inc_to_inc_recid_y3,
+                inc_to_inc_recid_y4,
+                inc_to_inc_recid_y5,
+                N_inc_above_poverty_y1,
+                inc_above_poverty_y1,
+                inc_above_poverty_y3,
+                inc_above_poverty_y5,
+                N_inc_any_w2_y1,
+                inc_any_w2_y1,
+                inc_any_w2_y3,
+                inc_any_w2_y5,
+                N_inc_w2_wages_y1,
+                inc_w2_wages_y1,
+                inc_w2_wages_y3,
+                inc_w2_wages_y5,
+                N_inc_hud_y1,
+                inc_hud_y1,
+                inc_hud_y3,
+                inc_hud_y5,
+                N_inc_ssi_y1,
+                inc_ssi_y1,
+                inc_ssi_y3,
+                inc_ssi_y5, 
+                N_inc_medicaid_y1,
+                inc_medicaid_y1,
+                inc_medicaid_y3, 
+                inc_medicaid_y5, 
+                inc_medicare_y1, 
+                inc_medicare_y3, 
+                inc_medicare_y5, 
+                N_inc_mortality_y1,
+                inc_mortality_y1, 
+                inc_mortality_y3, 
+                inc_mortality_y5) |> 
+  ### now clean following grouping vars: sex, race, age_group, off_type, and repeat_contact
+  ### 0 == overall counts for all grouping vars will be NA in clean variable versions
+  
+  ### age
+  ### use factor function to assign labels to values
+   mutate(age_group_clean = factor(age_group,
+         levels = c(1,2,3),
+         labels = c("15-24", 
+                    "25-40", 
+                    "40+")),  
+  ### race/ethnicity
+  race_clean = factor(race,
+         levels = c(1,2,3,4,5),
+         labels = c("White, non-Hispanic",
+                    "Black, non-Hispanic",
+                    "Asian or Pacific Islander, non-Hispanic",
+                    "Hispanic",
+                    "American Indian or Alaska Native")),
+  ### sex
+  sex_clean = factor(sex,
+         levels = c(1,2),
+         labels = c("Male", 
+                    "Female")),
+  ### off_type
+  off_type_clean = factor(off_type,
+         levels = c(1,2,3),
+         labels = c("Violent", 
+                    "Property", 
+                    "Drug")),
+  ### repeat_contact
+  repeat_contact_clean = factor(repeat_contact,
+         levels = c(1,2,3),
+         labels = c("First-time contact only", 
+                    "Repeat contact only",
+                    "All calculated with reweights"))) 
+
+
+### create analytic file with only overall counts and rates
+df_cjars_q3_county_overall_only <- df_cjars_q3_county_raw |> 
+  ### 0 == overall counts for all grouping vars
+  filter(age_group==0,
+         race==0, 
+         sex==0,
+         off_type==0,
+         repeat_contact==0) |> 
+  ### drop clean grouping vars
+  dplyr::select(-c(age_group_clean:repeat_contact_clean))
+
+```
+
+
+<br>
+
+### Export Files
+
+```{r }
+### export both state- and county-level files for dashboard viz
+
+#################
+### state level
+#################
+
+### overall only
+write_rds(df_cjars_q3_state_overall_only,
+          file.path(reentry_2030_cjars_clean,"cjars_clean_state_overall_only.rds"))
+
+
+### with disaggregations
+write_rds(df_cjars_q3_state_raw,
+          file.path(reentry_2030_cjars_clean,"cjars_clean_state_with_breakdowns.rds"))
+
+
+#################
+### county level
+#################
+
+### overall only
+write_rds(df_cjars_q3_county_overall_only,
+          file.path(reentry_2030_cjars_clean,"cjars_clean_county_overall_only.rds"))
+
+
+### with disaggregations
+write_rds(df_cjars_q3_county_raw,
+          file.path(reentry_2030_cjars_clean,"cjars_clean_county_with_breakdowns.rds"))
+
+
+```
+
+

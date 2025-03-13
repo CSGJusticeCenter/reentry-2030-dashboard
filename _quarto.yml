@@ -1,0 +1,23 @@
+project:
+  type: website
+
+website:
+  title: "Reentry 2030 Dashboard (mock-up)"
+  favicon: img/favicon.png
+  navbar:
+    right:
+      - text: "National Page"
+        href: index.html
+      - text: "State Page Example"
+        href: reentry_dashboard_state_page.html
+      - text: "Cleaning Code"
+        href: reentry_dashboard_cleaning_code.html
+format:
+  html:
+    theme: flatly
+    css: styles.css
+    toc: true
+    toc-location: left
+
+execute:
+  freeze: auto
