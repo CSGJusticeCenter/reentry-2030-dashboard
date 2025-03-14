@@ -469,8 +469,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   |                                                                            
   |=====================                                                 |  30%
   |                                                                            
-  |======================                                                |  32%
-  |                                                                            
   |=======================                                               |  33%
   |                                                                            
   |========================                                              |  35%
@@ -479,11 +477,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   |                                                                            
   |===========================                                           |  39%
   |                                                                            
-  |=============================                                         |  42%
+  |=============================                                         |  41%
   |                                                                            
-  |==============================                                        |  43%
+  |===============================                                       |  45%
   |                                                                            
-  |==================================                                    |  49%
+  |====================================                                  |  52%
   |                                                                            
   |======================================                                |  54%
   |                                                                            
@@ -491,11 +489,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   |                                                                            
   |=========================================                             |  59%
   |                                                                            
-  |===========================================                           |  61%
-  |                                                                            
   |===========================================                           |  62%
-  |                                                                            
-  |============================================                          |  63%
   |                                                                            
   |==============================================                        |  65%
   |                                                                            
@@ -511,15 +505,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   |                                                                            
   |======================================================                |  78%
   |                                                                            
-  |========================================================              |  80%
-  |                                                                            
-  |==========================================================            |  82%
-  |                                                                            
   |============================================================          |  86%
   |                                                                            
-  |=================================================================     |  92%
-  |                                                                            
-  |===================================================================== |  98%
+  |===============================================================       |  90%
   |                                                                            
   |======================================================================| 100%</code></pre>
 </div>
@@ -529,8 +517,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">gc</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>           used  (Mb) gc trigger  (Mb) max used  (Mb)
-Ncells  1520698  81.3    2369250 126.6  2369250 126.6
-Vcells 13344943 101.9   87369828 666.6 97868892 746.7</code></pre>
+Ncells  1520693  81.3    2369091 126.6  2369091 126.6
+Vcells 13344820 101.9   87369825 666.6 97877377 746.8</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="do">### import county_data.csv via data.table::fread b/c of file size</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="do">### file note: confirm that file is aggregated by fips, cohort_year, sex, race, age_group, off_type, and repeat_contact</span></span>
@@ -704,22 +692,22 @@ freadR.c has been passed a filename: C:/Users/abyrum/OneDrive/The Council of Sta
   Allocating 401 column slots (401 - 0 dropped) with 15092707 rows
 [11] Read the data
   jumps=[0..6016), chunk_size=1048662, total_size=6308751932
-Read 11788030 rows x 401 columns from 5.875GB (6308758691 bytes) file in 01:40.834 wall clock time
+Read 11788030 rows x 401 columns from 5.875GB (6308758691 bytes) file in 01:00.483 wall clock time
 [12] Finalizing the datatable
   Type counts:
        224 : int32     '6'
        177 : float64   '8'
 =============================
-   0.002s (  0%) Memory map 5.875GB file
-   0.139s (  0%) sep=',' ncol=401 and header detection
+   0.001s (  0%) Memory map 5.875GB file
+   0.208s (  0%) sep=',' ncol=401 and header detection
    0.000s (  0%) Column type detection using 10072 sample rows
-  17.848s ( 18%) Allocation of 15092707 rows x 401 cols (32.498GB) of which 11788030 ( 78%) rows used
-  82.845s ( 82%) Reading 6016 chunks (0 swept) of 1.000MB (each chunk 1959 rows) using 8 threads
-   +   39.296s ( 39%) Parse to row-major thread buffers (grown 0 times)
-   +   35.336s ( 35%) Transpose
-   +    8.213s (  8%) Waiting
+   4.685s (  8%) Allocation of 15092707 rows x 401 cols (32.498GB) of which 11788030 ( 78%) rows used
+  55.588s ( 92%) Reading 6016 chunks (0 swept) of 1.000MB (each chunk 1959 rows) using 8 threads
+   +   32.474s ( 54%) Parse to row-major thread buffers (grown 0 times)
+   +   21.753s ( 36%) Transpose
+   +    1.360s (  2%) Waiting
    0.000s (  0%) Rereading 0 columns due to out-of-sample type exceptions
- 100.834s        Total</code></pre>
+  60.483s        Total</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="do">### create analytic file with only overall counts and rates</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>df_cjars_q3_county_overall_only <span class="ot">&lt;-</span> df_cjars_q3_county_raw <span class="sc">|&gt;</span> </span>
@@ -740,7 +728,7 @@ Read 11788030 rows x 401 columns from 5.875GB (6308758691 bytes) file in 01:40.8
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="do">#################</span></span>
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="do">### state level</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="do">################</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="do">#################</span></span>
 <span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="do">### overall only</span></span>
 <span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(df_cjars_q3_state_overall_only,</span>
@@ -754,7 +742,7 @@ Read 11788030 rows x 401 columns from 5.875GB (6308758691 bytes) file in 01:40.8
 <span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="do">#################</span></span>
 <span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="do">### county level</span></span>
-<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="do">################</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="do">#################</span></span>
 <span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="do">### overall only</span></span>
 <span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(df_cjars_q3_county_overall_only,</span>

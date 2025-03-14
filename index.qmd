@@ -54,6 +54,8 @@ blue2 <- "#9ed4ef"
 blue4 <- "#007392"
 blue5 <- "#00475d"
 
+axis_expansion_mult <- 0.5
+
 ```
 
 ```{r}
@@ -86,7 +88,6 @@ reentry_2030_cjars_clean <- file.path(reentry_2030_cjars,
 ### import files
 #########################
 
-
 #################
 ### state level
 #################
@@ -96,14 +97,15 @@ df_cjars_q3_state_overall_only <- read_rds(file.path(reentry_2030_cjars_clean,"c
 
 
 ### with disaggregations
-df_cjars_q3_state_breakdowns <- read_rds(file.path(reentry_2030_cjars_clean,"cjars_clean_state_with_breakdowns.rds"))
+df_cjars_q3_state_raw <- read_rds(file.path(reentry_2030_cjars_clean,"cjars_clean_state_with_breakdowns.rds"))
+
 
 ```
 
 
-# Trends in Reentry
+# Trends in Reentry 
 
-**Note:** Throughout this analysis, I've used the earliest and latest year with available data -- this appears to differ depending on the state and metric. When possible, I've indicated the specific years used in the visual's tooltips. For the national page, we may end up just wanting to include a single set of years (e.g. 2000 as earliest and 2021 as latest) to have consistency. 
+**Note:** Throughout this analysis, I've used the earliest and latest year with available data -- this appears to differ depending on the county and metric. When possible, I've indicated the specific years used in the visual's tooltips. We may end up just wanting to include a single set of years (e.g. 2000 as earliest and 2021 as latest) to have consistency. 
 
 <br>
 
@@ -261,7 +263,6 @@ highchart() |>
     style = list(fontFamily = default_fonts)
     ) |>
   hc_setup()
-
 
 ```
 
@@ -1262,7 +1263,7 @@ df_cjars_q3_state_overall_only_housing_map <- df_cjars_q3_state_overall_only |>
             max_cohort_year = max(cohort_year),
             inc_hud_y3_min_year = inc_hud_y3[cohort_year == min_cohort_year],
             inc_hud_y3_max_year = inc_hud_y3[cohort_year == max_cohort_year],
-            inc_hud_y3_max_year_to_map = inc_hud_y3*100) |> 
+            inc_hud_y3_max_year_to_map = inc_hud_y3_max_year*100) |> 
   ungroup() |>
   ### add '+" in front of positive numbers and 0
   ### only for value we'll include in tooltip
@@ -1373,8 +1374,6 @@ highchart() |>
 
 
 ```
-
-
 
 
 
@@ -2318,5 +2317,94 @@ to_plot |>
 ```
 
 :::
+
+<br>
+
+## Reentry Numbers by State
+
+**Note:** Similar to the maps, I've pulled metrics from the latest year available -- this varies by state. 
+
+```{r}
+### combine dfs used for maps -- pulling metric from latest year available
+### for each given metric (which we already did df by df above)
+
+### first create list of all dfs to join via state name/fips
+df_cjars_map_data_list <- list(df_cjars_q3_state_overall_only_recidivism_map_2,
+                                                     df_cjars_q3_state_overall_only_poverty_map, 
+                                                     df_cjars_q3_state_overall_only_w2_map,
+                                                     df_cjars_q3_state_overall_only_wages_map,
+                                                     df_cjars_q3_state_overall_only_housing_map,
+                                                     df_cjars_q3_state_overall_only_ssi_map,
+                                                     df_cjars_q3_state_overall_only_medicaid_map,
+                                                     df_cjars_q3_state_overall_only_medicare_map,
+                                                     df_cjars_q3_state_overall_only_mortality_map) 
+
+
+### now merge all dfs -- keeping all states with at least one data point (via all = TRUE)
+### select columns needed for table
+df_cjars_q3_state_overall_only_to_table <- purrr::reduce(.x = df_cjars_map_data_list, 
+                                                         merge, 
+                                                         by = c("state_name",
+                                                                "state_abbr",
+                                                                "fips"), 
+                                                         all = TRUE) |> 
+  dplyr::select(state_name,
+                state_abbr,
+                fips,
+                inc_to_inc_recid_y2_max_year_to_map,
+                inc_above_poverty_y3_max_year_to_map,
+                inc_any_w2_y3_max_year_to_map,
+                inc_w2_wages_y3_max_year,
+                inc_hud_y3_max_year_to_map,
+                inc_ssi_y3_max_year_to_map,
+                inc_medicaid_y3_max_year_to_map,
+                inc_medicare_y3_max_year_to_map,
+                inc_mortality_y3_max_year_to_map) |> 
+  ### there are some pure duplicates based on differing min and max cohort years 
+  ### this doesn't impact the current table/analysis/need
+  distinct()
+
+
+### create state-level table
+df_cjars_q3_state_overall_only_to_table |> 
+    select(state_name,
+           inc_to_inc_recid_y2_max_year_to_map,
+           inc_above_poverty_y3_max_year_to_map,
+           inc_any_w2_y3_max_year_to_map,
+           inc_w2_wages_y3_max_year,
+           inc_hud_y3_max_year_to_map,
+           inc_ssi_y3_max_year_to_map,
+           inc_medicaid_y3_max_year_to_map,
+           inc_medicare_y3_max_year_to_map,
+           inc_mortality_y3_max_year_to_map) |> 
+  reactable_template(
+    sort_col = list("state_name" = "asc"),
+    columns = list(
+      state_name = colDef(name = "State"),
+      inc_to_inc_recid_y2_max_year_to_map = colDef(name = "2-Year Recidivism Rate",
+        format = colFormat(suffix = "%", digits = 0)), 
+      inc_above_poverty_y3_max_year_to_map = colDef(name = "Poverty Rate (above poverty)",
+        format = colFormat(suffix = "%", digits = 0)), 
+      inc_any_w2_y3_max_year_to_map = colDef(name = "W2 Filing Rate",
+        format = colFormat(suffix = "%", digits = 0)), 
+      inc_w2_wages_y3_max_year = colDef(name = "Income",
+        format = colFormat(prefix = "$", digits = 0)), 
+      inc_hud_y3_max_year_to_map = colDef(name = "HUD Assistance Rate",
+        format = colFormat(suffix = "%", digits = 0)), 
+      inc_ssi_y3_max_year_to_map = colDef(name = "SSI Rate",
+        format = colFormat(suffix = "%", digits = 0)), 
+      inc_medicaid_y3_max_year_to_map = colDef(name = "Medicaid Enrollment",
+        format = colFormat(suffix = "%", digits = 0)), 
+      inc_medicare_y3_max_year_to_map = colDef(name = "Medicare Enrollment",
+        format = colFormat(suffix = "%", digits = 0)), 
+      inc_mortality_y3_max_year_to_map = colDef(
+        name = "Mortality Rate",
+        format = colFormat(suffix = "%", digits = 0)
+        )
+      )
+    )
+
+```
+
 
 <br>
