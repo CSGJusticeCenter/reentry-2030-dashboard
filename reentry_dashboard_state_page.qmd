@@ -58,18 +58,6 @@ axis_expansion_mult <- 0.5
 
 state_name <- "North Carolina"
 
-```
-
-```{r}
-### import and prep hex map geo
-hex <- sf::read_sf("us_states_hexgrid.geojson") |>
-  select(state_abb = iso3166_2)
-
-hex_gj <- hex |>
-  sf::st_transform(3857) |>
-  geojsonsf::sf_geojson() |>
-  jsonlite::fromJSON(simplifyVector = FALSE)
-
 axis_expansion_mult <- 0.5
 
 ```

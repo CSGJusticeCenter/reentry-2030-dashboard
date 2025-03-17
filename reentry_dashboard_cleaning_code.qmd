@@ -16,6 +16,9 @@ execute:
 
 ## Variables to Explore
 
+These are based on the Reentry 2030 Dashboard Analysis Plan: https://csgorg.sharepoint.com/:w:/r/sites/Team-JC-Research/Shared%20Documents/CRD_Reentry%202030/Deliverables/Analysis%20Plan%20for%20Reentry%202030%20Dashboard.docx?d=wb7166caab9de4394a552b401c6bcee08&csf=1&web=1&e=A6M2up
+
+
 **Recidivism:**
 
 * *inc_to_inc_recid_y1*: Incarceration to incarceration recidivism within one year
