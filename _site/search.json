@@ -109,12 +109,12 @@
     "href": "reentry_dashboard_state_page.html#recidivism",
     "title": "Trends in Reentry in North Carolina",
     "section": "Recidivism",
-    "text": "Recidivism\n\nChange over time2-year recidivism rate"
+    "text": "Recidivism"
   },
   {
     "objectID": "reentry_dashboard_state_page.html#recidivism-rates-over-time",
     "href": "reentry_dashboard_state_page.html#recidivism-rates-over-time",
-    "title": "Trends in Reentry in North Carolina",
+    "title": "Reentry Trends in North Carolina",
     "section": "Recidivism rates over time",
     "text": "Recidivism rates over time\n\n1-year reincarceration2-year reincarceration3-year reincarceration4-year reincarceration5-year reincarceration"
   },
@@ -166,5 +166,12 @@
     "title": "Trends in Reentry in North Carolina",
     "section": "Reentry Numbers by State",
     "text": "Reentry Numbers by State\nNote: Similar to the maps, I’ve pulled metrics from the latest year available – this varies by state."
+  },
+  {
+    "objectID": "reentry_dashboard_state_page.html#recidivism-by-county",
+    "href": "reentry_dashboard_state_page.html#recidivism-by-county",
+    "title": "Reentry Trends in North Carolina",
+    "section": "Recidivism by county",
+    "text": "Recidivism by county"
   }
 ]
