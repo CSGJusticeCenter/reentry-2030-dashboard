@@ -162,7 +162,7 @@ df_cjars_q3_state_overall_state_reentry_us <- df_cjars_q3_state_overall_only |>
 
 ## Recidivism by county
 
-```{r }
+```{r include=FALSE}
 
 ### pull in county names and population info
 ### county-level file
