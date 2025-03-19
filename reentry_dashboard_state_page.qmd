@@ -160,7 +160,10 @@ df_cjars_q3_state_overall_state_reentry_us <- df_cjars_q3_state_overall_only |>
 
 <br>
 
-## Recidivism by county
+## Recidivism
+
+
+### Recidivism by county
 
 ```{r include=FALSE}
 
@@ -265,7 +268,7 @@ hcmap(
   borderColor = "black",
   accessibility = list(
       point = list(
-        valueDescriptionFormat = "county: {point.acs_county_name}, solve rate: {point.value:.1f}"
+        valueDescriptionFormat = "county: {point.acs_county_name}, rate: {point.value:.1f}"
         )
       )) |> 
   hc_title(
@@ -311,12 +314,12 @@ hcmap(
 ```
 
 
-## Recidivism rates over time 
+### Recidivism rates over time 
 
 ::: {.panel-tabset}
 
 
-### 1-year reincarceration  
+#### 1-year reincarceration  
 
 ```{r }
 
@@ -366,7 +369,7 @@ to_plot |>
 ```
 
 
-### 2-year reincarceration  
+#### 2-year reincarceration  
 
 ```{r }
 
@@ -417,7 +420,7 @@ to_plot |>
 ```
 
 
-### 3-year reincarceration  
+#### 3-year reincarceration  
 
 ```{r }
 
@@ -467,7 +470,7 @@ to_plot |>
 
 ```
 
-### 4-year reincarceration  
+#### 4-year reincarceration  
 
 ```{r }
 
@@ -516,7 +519,7 @@ to_plot |>
 
 ```
 
-### 5-year reincarceration  
+#### 5-year reincarceration  
 
 ```{r }
 
@@ -569,4 +572,969 @@ to_plot |>
 :::
 
 <br>
+
+## Employment
+
+
+### Poverty rate by county
+
+```{r include=FALSE}
+
+### add tooltip to mapping df
+df_cjars_q3_county_overall_only_tooltip <- df_cjars_q3_county_overall_only |> 
+  mutate(inc_above_poverty_y3_to_map = inc_above_poverty_y3*100) |>
+  ### filter out years/counties with missing data
+  filter(!is.na(inc_above_poverty_y3)) |>
+  group_by(county_fips) |> 
+  ### now calculate % change over time from earliest year of data to latest year of data
+  summarize(min_cohort_year = min(cohort_year,
+                                  na.rm=TRUE),
+            max_cohort_year = max(cohort_year,
+                                  na.rm=TRUE),
+            inc_above_poverty_y3_min_year = inc_above_poverty_y3[cohort_year == min_cohort_year],
+            inc_above_poverty_y3_max_year = inc_above_poverty_y3[cohort_year == max_cohort_year],
+            inc_above_poverty_y3_max_year_to_map = inc_above_poverty_y3_to_map[cohort_year == max_cohort_year]) |> 
+  ungroup() |> 
+  ### right join in acs county file so that every county has a tooltip -- even
+  ### if they are missing data from CJARS
+  ### e.g. we want the map base file to include all counties
+  right_join(us_county_population,
+            by = "county_fips") |> 
+  # ### removing counties' solved rate if they have fewer than 25 incidents reported in 2022
+  # ### we want them grayed out on map
+  # mutate(solved_rate_2023 = ifelse(n_reported_2023<25,
+  #                                    NA,solved_rate_2023)) |> 
+  # ### recode any solved counts or rates less than 0 to 0
+  # mutate(solved_rate_2023 = ifelse(solved_rate_2023<0 & !is.na(solved_rate_2023),
+  #                                    0,solved_rate_2023),
+  #        n_solved_2023 = ifelse(n_solved_2023<0 & !is.na(n_solved_2023),
+  #                                    0,n_solved_2023)) |>
+  # ### convert solve rate from decimal to whole number -- for map legend
+  # mutate(solved_rate_2023 = solved_rate_2023*100) |> 
+  # # ### recode NaN and Inf values as NA
+  # # mutate(across(.cols = solved_rate_percent_point_change_2019_2022, 
+  # #               ~ ifelse(is.infinite(.x) | is.nan(.x), NA, .x))) |> 
+  # # ### add '+" in front of positive numbers and 0
+  # # ### only for value we'll include in tooltip
+  mutate(tooltip = case_when(
+    !is.na(inc_above_poverty_y3_max_year_to_map)==TRUE ~ paste0(
+    "<b>", acs_county_name," – ",max_cohort_year, "</b><br>",
+      "3-year poverty rate in ",min_cohort_year,": ",
+      percent(inc_above_poverty_y3_min_year, 1),
+      "<br>",
+      "3-year poverty rate in ",max_cohort_year,": ",
+      percent(inc_above_poverty_y3_max_year, 1)
+    ),
+    # n_reported_2023<25 & !is.na(n_reported_2023) ~ paste0(
+    #   "Agencies in ", county_clean, " did not report enough", "<br>",
+    #   "data on solved crime to the FBI to", "<br>",
+    #   "make reliable estimates (fewer than 25 incidents)."
+    #   ),
+    is.na(inc_above_poverty_y3_max_year_to_map)==TRUE ~ paste0(
+       "<b>", acs_county_name, "</b><br>",
+      "No 3-year poverty data was reported by CJARS."
+      )
+    )) 
+
+### extract state abbr for hc map pull
+state_abbr <- tolower(head(df_cjars_q3_county_overall_only$state_abbr[!is.na(df_cjars_q3_county_overall_only$state_abbr)],1))
+
+```
+
+
+```{r }
+#| fig-height: 5.5
+
+### pull only state geo that we want for each param iteration
+hcmap(
+  paste0("countries/us/us-",state_abbr,"-all"),
+  data = df_cjars_q3_county_overall_only_tooltip,
+  value = "inc_above_poverty_y3_max_year_to_map",
+  joinBy = c("fips","county_fips"),
+  nullColor = "#E8E8E8",
+  nullInteraction = TRUE,
+  borderWidth = 0.45,
+  borderColor = "black",
+  accessibility = list(
+      point = list(
+        valueDescriptionFormat = "county: {point.acs_county_name}, rate: {point.value:.1f}"
+        )
+      )) |> 
+  hc_title(
+    text = "Poverty Rate",
+    align = "left",
+    style = list(fontFamily = header_font, color = "#005FAD",
+                              fontSize = "24px", fontWeight = "bold")
+    ) |>   
+    hc_subtitle(
+    text = "Proportion of individuals above poverty, three years after release from prison",
+    align = "left",
+    style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")
+  ) |>
+  hc_colorAxis(endOnTick = TRUE,
+               startOnTick = TRUE,
+               stops = color_stops(4, c(blue1,
+                                        blue2,
+                                        blue4,
+                                        blue5)),
+               labels = list(format = "{value}%",
+                             style = list(fontSize = "12px",
+                                          fontFamily = default_fonts))) |> 
+  hc_legend(align = "center",
+            horizontalAlign = "bottom",
+            layout = "horizontal",
+            # title = list(text = "Percent Change"),
+            symbolHeight = 25,
+            symbolWidth = 315,
+            x = 0,
+            y = 0
+            ) |> 
+     hc_tooltip(
+        style = list(fontFamily = default_fonts),
+        formatter = JS("function() {
+        return '<div style=\"background-color: #FFFFFF; opacity: 1; padding: 8px; border: none;\">' +
+        this.point.tooltip +
+        '</div>';}"),
+        useHTML = TRUE
+      ) |>
+  hc_setup()
+
+```
+
+
+### Employment trends over time 
+
+::: {.panel-tabset}
+
+
+#### Poverty rate  
+
+```{r }
+
+to_plot <- df_cjars_q3_state_overall_state_reentry_us |> 
+    filter(!is.na(inc_above_poverty_y3),
+           !is.nan(inc_above_poverty_y3)) |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(mean_rate = inc_above_poverty_y3*100,
+         group = fct_relevel(group, 
+                                          paste0("Other Reentry 2030 States"),
+                                          paste0("U.S."),
+                                          after = Inf),
+    ### create tooltip
+    tooltip = paste0(
+      "<b>", group, " – ", cohort_year, "</b><br>",
+      "Poverty Rate (%): ", percent(inc_above_poverty_y3, 1)
+      ))
+
+rng <- range(to_plot$mean_rate)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
+  
+
+### now plot
+to_plot |> 
+  hchart(
+    "spline",
+    hcaes(cohort_year, mean_rate, group = group),
+    color = jr_pal[c(1,5,7)],
+    dashStyle = c("solid","dash", "dash"),
+    opacity = c(1, 0.75, 0.75),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )      
+  ) |> 
+  hc_title(text = paste0("3-year poverty rates over time (averages)")) |>
+  hc_subtitle(text = paste0("Proportion of individuals above poverty, three years after release from prison")) |>
+  hc_caption(text = "Criminal Justice Administrative Records System (CJARS)") |>
+  hc_yAxis(labels = list(format = "{value}%")) |>
+  hc_setup()
+
+
+```
+
+
+#### W2 Enrollment   
+
+```{r }
+
+to_plot <- df_cjars_q3_state_overall_state_reentry_us |> 
+    filter(!is.na(inc_any_w2_y3),
+           !is.nan(inc_any_w2_y3)) |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(mean_rate = inc_any_w2_y3*100,
+         group = fct_relevel(group, 
+                                          paste0("Other Reentry 2030 States"),
+                                          paste0("U.S."),
+                                          after = Inf),
+    ### create tooltip
+    tooltip = paste0(
+      "<b>", group, " – ", cohort_year, "</b><br>",
+      "W2 Enrollment Rate (%): ", percent(inc_any_w2_y3, 1)
+      ))
+
+rng <- range(to_plot$mean_rate)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
+  
+
+### now plot
+to_plot |> 
+  hchart(
+    "spline",
+    hcaes(cohort_year, mean_rate, group = group),
+    color = jr_pal[c(1,5,7)],
+    dashStyle = c("solid","dash", "dash"),
+    opacity = c(1, 0.75, 0.75),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )      
+  ) |> 
+  hc_title(text = paste0("3-year W2 enrollment rates over time (averages)")) |>
+  hc_subtitle(text = paste0("Proportion of individuals with at least one W2 filed, three years after release from prison")) |>
+  hc_caption(text = "Criminal Justice Administrative Records System (CJARS)") |>
+  hc_yAxis(labels = list(format = "{value}%")) |>
+  hc_setup()
+
+
+
+```
+
+
+#### Income  
+
+```{r }
+
+to_plot <- df_cjars_q3_state_overall_state_reentry_us |> 
+    filter(!is.na(inc_w2_wages_y3),
+           !is.nan(inc_w2_wages_y3)) |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(mean_rate = inc_w2_wages_y3,
+         group = fct_relevel(group, 
+                                          paste0("Other Reentry 2030 States"),
+                                          paste0("U.S."),
+                                          after = Inf),
+    ### create tooltip
+    tooltip = paste0(
+      "<b>", group, " – ", cohort_year, "</b><br>",
+      "Income: $", comma(inc_w2_wages_y3, 1)
+      ))
+
+rng <- range(to_plot$mean_rate)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
+  
+
+### now plot
+to_plot |> 
+  hchart(
+    "spline",
+    hcaes(cohort_year, mean_rate, group = group),
+    color = jr_pal[c(1,5,7)],
+    dashStyle = c("solid","dash", "dash"),
+    opacity = c(1, 0.75, 0.75),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )      
+  ) |> 
+  hc_title(text = paste0("Income")) |>
+  hc_subtitle(
+    text = "Income of individuals, three years after release from prison (averages)",
+    style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")
+  ) |> 
+  hc_caption(text = "Criminal Justice Administrative Records System (CJARS)") |>
+  hc_setup() |> 
+  hc_yAxis(labels = list(format = "${value}"))
+
+
+```
+
+:::
+
+<br>
+
+
+## Housing
+
+
+### HUD rental assistance by county
+
+```{r include=FALSE}
+
+### add tooltip to mapping df
+df_cjars_q3_county_overall_only_tooltip <- df_cjars_q3_county_overall_only |> 
+  mutate(inc_hud_y3_to_map = inc_hud_y3*100) |>
+  ### filter out years/counties with missing data
+  filter(!is.na(inc_hud_y3)) |>
+  group_by(county_fips) |> 
+  ### now calculate % change over time from earliest year of data to latest year of data
+  summarize(min_cohort_year = min(cohort_year,
+                                  na.rm=TRUE),
+            max_cohort_year = max(cohort_year,
+                                  na.rm=TRUE),
+            inc_hud_y3_min_year = inc_hud_y3[cohort_year == min_cohort_year],
+            inc_hud_y3_max_year = inc_hud_y3[cohort_year == max_cohort_year],
+            inc_hud_y3_max_year_to_map = inc_hud_y3[cohort_year == max_cohort_year]) |> 
+  ungroup() |> 
+  ### right join in acs county file so that every county has a tooltip -- even
+  ### if they are missing data from CJARS
+  ### e.g. we want the map base file to include all counties
+  right_join(us_county_population,
+            by = "county_fips") |> 
+  # ### removing counties' solved rate if they have fewer than 25 incidents reported in 2022
+  # ### we want them grayed out on map
+  # mutate(solved_rate_2023 = ifelse(n_reported_2023<25,
+  #                                    NA,solved_rate_2023)) |> 
+  # ### recode any solved counts or rates less than 0 to 0
+  # mutate(solved_rate_2023 = ifelse(solved_rate_2023<0 & !is.na(solved_rate_2023),
+  #                                    0,solved_rate_2023),
+  #        n_solved_2023 = ifelse(n_solved_2023<0 & !is.na(n_solved_2023),
+  #                                    0,n_solved_2023)) |>
+  # ### convert solve rate from decimal to whole number -- for map legend
+  # mutate(solved_rate_2023 = solved_rate_2023*100) |> 
+  # # ### recode NaN and Inf values as NA
+  # # mutate(across(.cols = solved_rate_percent_point_change_2019_2022, 
+  # #               ~ ifelse(is.infinite(.x) | is.nan(.x), NA, .x))) |> 
+  # # ### add '+" in front of positive numbers and 0
+  # # ### only for value we'll include in tooltip
+  mutate(tooltip = case_when(
+    !is.na(inc_hud_y3_max_year_to_map)==TRUE ~ paste0(
+    "<b>", acs_county_name," – ",max_cohort_year, "</b><br>",
+      "3-year rental assistance rate in ",min_cohort_year,": ",
+      percent(inc_hud_y3_min_year, 1),
+      "<br>",
+      "3-year rental assistance rate in ",max_cohort_year,": ",
+      percent(inc_hud_y3_max_year, 1)
+    ),
+    # n_reported_2023<25 & !is.na(n_reported_2023) ~ paste0(
+    #   "Agencies in ", county_clean, " did not report enough", "<br>",
+    #   "data on solved crime to the FBI to", "<br>",
+    #   "make reliable estimates (fewer than 25 incidents)."
+    #   ),
+    is.na(inc_hud_y3_max_year_to_map)==TRUE ~ paste0(
+       "<b>", acs_county_name, "</b><br>",
+      "No 3-year HUD rental assistance data was reported by CJARS."
+      )
+    )) 
+
+### extract state abbr for hc map pull
+state_abbr <- tolower(head(df_cjars_q3_county_overall_only$state_abbr[!is.na(df_cjars_q3_county_overall_only$state_abbr)],1))
+
+```
+
+
+```{r }
+#| fig-height: 5.5
+
+### pull only state geo that we want for each param iteration
+hcmap(
+  paste0("countries/us/us-",state_abbr,"-all"),
+  data = df_cjars_q3_county_overall_only_tooltip,
+  value = "inc_hud_y3_max_year_to_map",
+  joinBy = c("fips","county_fips"),
+  nullColor = "#E8E8E8",
+  nullInteraction = TRUE,
+  borderWidth = 0.45,
+  borderColor = "black",
+  accessibility = list(
+      point = list(
+        valueDescriptionFormat = "county: {point.acs_county_name}, rate: {point.value:.1f}"
+        )
+      )) |> 
+  hc_title(
+    text = "HUD Rental Assistance Rate",
+    align = "left",
+    style = list(fontFamily = header_font, color = "#005FAD",
+                              fontSize = "24px", fontWeight = "bold")
+    ) |>   
+    hc_subtitle(
+    text = "Proportion of individuals that received HUD rental housing assistance, three years after release from prison",
+    align = "left",
+    style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")
+  ) |>
+  hc_colorAxis(endOnTick = TRUE,
+               startOnTick = TRUE,
+               stops = color_stops(4, c(blue1,
+                                        blue2,
+                                        blue4,
+                                        blue5)),
+               labels = list(format = "{value}%",
+                             style = list(fontSize = "12px",
+                                          fontFamily = default_fonts))) |> 
+  hc_legend(align = "center",
+            horizontalAlign = "bottom",
+            layout = "horizontal",
+            # title = list(text = "Percent Change"),
+            symbolHeight = 25,
+            symbolWidth = 315,
+            x = 0,
+            y = 0
+            ) |> 
+     hc_tooltip(
+        style = list(fontFamily = default_fonts),
+        formatter = JS("function() {
+        return '<div style=\"background-color: #FFFFFF; opacity: 1; padding: 8px; border: none;\">' +
+        this.point.tooltip +
+        '</div>';}"),
+        useHTML = TRUE
+      ) |>
+  hc_setup()
+
+```
+
+
+### Housing trends over time 
+
+::: {.panel-tabset}
+
+
+#### 1-year HUD rental assistance  
+
+```{r }
+
+to_plot <- df_cjars_q3_state_overall_state_reentry_us |> 
+    filter(!is.na(inc_hud_y1),
+           !is.nan(inc_hud_y1)) |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(mean_rate = inc_hud_y1*100,
+         group = fct_relevel(group, 
+                                          paste0("Other Reentry 2030 States"),
+                                          paste0("U.S."),
+                                          after = Inf),
+    ### create tooltip
+    tooltip = paste0(
+      "<b>", group, " – ", cohort_year, "</b><br>",
+      "Rental Assistance Rate (%): ", percent(inc_hud_y1, 1)
+      ))
+
+rng <- range(to_plot$mean_rate)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
+  
+
+### now plot
+to_plot |> 
+  hchart(
+    "spline",
+    hcaes(cohort_year, mean_rate, group = group),
+    color = jr_pal[c(1,5,7)],
+    dashStyle = c("solid","dash", "dash"),
+    opacity = c(1, 0.75, 0.75),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )      
+  ) |> 
+  hc_title(text = paste0("HUD rental assistance")) |>
+  hc_subtitle(
+    text = "Proportion of individuals that received HUD rental housing assistance, one year after release from prison (averages)",
+    style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")
+  ) |> 
+  hc_caption(text = "Criminal Justice Administrative Records System (CJARS)") |>
+  hc_yAxis(labels = list(format = "{value}%")) |>
+  hc_setup()
+
+
+```
+
+
+#### 3-year HUD rental assistance    
+
+```{r }
+
+to_plot <- df_cjars_q3_state_overall_state_reentry_us |> 
+    filter(!is.na(inc_hud_y3),
+           !is.nan(inc_hud_y3)) |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(mean_rate = inc_hud_y3*100,
+         group = fct_relevel(group, 
+                                          paste0("Other Reentry 2030 States"),
+                                          paste0("U.S."),
+                                          after = Inf),
+    ### create tooltip
+    tooltip = paste0(
+      "<b>", group, " – ", cohort_year, "</b><br>",
+      "W2 Enrollment Rate (%): ", percent(inc_hud_y3, 1)
+      ))
+
+rng <- range(to_plot$mean_rate)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
+  
+
+### now plot
+to_plot |> 
+  hchart(
+    "spline",
+    hcaes(cohort_year, mean_rate, group = group),
+    color = jr_pal[c(1,5,7)],
+    dashStyle = c("solid","dash", "dash"),
+    opacity = c(1, 0.75, 0.75),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )      
+  ) |> 
+  hc_title(text = paste0("HUD rental assistance")) |>
+  hc_subtitle(
+    text = "Proportion of individuals that received HUD rental housing assistance, three years after release from prison (averages)",
+    style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")
+  ) |> 
+  hc_caption(text = "Criminal Justice Administrative Records System (CJARS)") |>
+  hc_yAxis(labels = list(format = "{value}%")) |>
+  hc_setup()
+
+
+
+```
+
+
+#### 5-year HUD rental assistance  
+
+```{r }
+
+to_plot <- df_cjars_q3_state_overall_state_reentry_us |> 
+    filter(!is.na(inc_hud_y5),
+           !is.nan(inc_hud_y5)) |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(mean_rate = inc_hud_y5*100,
+         group = fct_relevel(group, 
+                                          paste0("Other Reentry 2030 States"),
+                                          paste0("U.S."),
+                                          after = Inf),
+    ### create tooltip
+    tooltip = paste0(
+      "<b>", group, " – ", cohort_year, "</b><br>",
+      "Income: $", comma(inc_hud_y5, 1)
+      ))
+
+rng <- range(to_plot$mean_rate)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
+  
+
+### now plot
+to_plot |> 
+  hchart(
+    "spline",
+    hcaes(cohort_year, mean_rate, group = group),
+    color = jr_pal[c(1,5,7)],
+    dashStyle = c("solid","dash", "dash"),
+    opacity = c(1, 0.75, 0.75),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )      
+  ) |> 
+  hc_title(text = paste0("HUD rental assistance")) |>
+  hc_subtitle(
+    text = "Proportion of individuals that received HUD rental housing assistance, five years after release from prison (averages)",
+    style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")
+  ) |> 
+  hc_caption(text = "Criminal Justice Administrative Records System (CJARS)") |>
+  hc_yAxis(labels = list(format = "{value}%")) |>
+  hc_setup()
+
+
+```
+
+:::
+
+<br>
+
+## Healthcare
+
+
+### SSI
+
+```{r include=FALSE}
+
+### add tooltip to mapping df
+df_cjars_q3_county_overall_only_tooltip <- df_cjars_q3_county_overall_only |> 
+  mutate(inc_ssi_y3_to_map = inc_ssi_y3*100) |>
+  ### filter out years/counties with missing data
+  filter(!is.na(inc_ssi_y3)) |>
+  group_by(county_fips) |> 
+  ### now calculate % change over time from earliest year of data to latest year of data
+  summarize(min_cohort_year = min(cohort_year,
+                                  na.rm=TRUE),
+            max_cohort_year = max(cohort_year,
+                                  na.rm=TRUE),
+            inc_ssi_y3_min_year = inc_ssi_y3[cohort_year == min_cohort_year],
+            inc_ssi_y3_max_year = inc_ssi_y3[cohort_year == max_cohort_year],
+            inc_ssi_y3_max_year_to_map = inc_ssi_y3[cohort_year == max_cohort_year]) |> 
+  ungroup() |> 
+  ### right join in acs county file so that every county has a tooltip -- even
+  ### if they are missing data from CJARS
+  ### e.g. we want the map base file to include all counties
+  right_join(us_county_population,
+            by = "county_fips") |> 
+  # ### removing counties' solved rate if they have fewer than 25 incidents reported in 2022
+  # ### we want them grayed out on map
+  # mutate(solved_rate_2023 = ifelse(n_reported_2023<25,
+  #                                    NA,solved_rate_2023)) |> 
+  # ### recode any solved counts or rates less than 0 to 0
+  # mutate(solved_rate_2023 = ifelse(solved_rate_2023<0 & !is.na(solved_rate_2023),
+  #                                    0,solved_rate_2023),
+  #        n_solved_2023 = ifelse(n_solved_2023<0 & !is.na(n_solved_2023),
+  #                                    0,n_solved_2023)) |>
+  # ### convert solve rate from decimal to whole number -- for map legend
+  # mutate(solved_rate_2023 = solved_rate_2023*100) |> 
+  # # ### recode NaN and Inf values as NA
+  # # mutate(across(.cols = solved_rate_percent_point_change_2019_2022, 
+  # #               ~ ifelse(is.infinite(.x) | is.nan(.x), NA, .x))) |> 
+  # # ### add '+" in front of positive numbers and 0
+  # # ### only for value we'll include in tooltip
+  mutate(tooltip = case_when(
+    !is.na(inc_ssi_y3_max_year_to_map)==TRUE ~ paste0(
+    "<b>", acs_county_name," – ",max_cohort_year, "</b><br>",
+      "3-year SSI reception rate in ",min_cohort_year,": ",
+      percent(inc_ssi_y3_min_year, 1),
+      "<br>",
+      "3-year SSI reception rate in ",max_cohort_year,": ",
+      percent(inc_ssi_y3_max_year, 1)
+    ),
+    # n_reported_2023<25 & !is.na(n_reported_2023) ~ paste0(
+    #   "Agencies in ", county_clean, " did not report enough", "<br>",
+    #   "data on solved crime to the FBI to", "<br>",
+    #   "make reliable estimates (fewer than 25 incidents)."
+    #   ),
+    is.na(inc_ssi_y3_max_year_to_map)==TRUE ~ paste0(
+       "<b>", acs_county_name, "</b><br>",
+      "No 3-year SSI data was reported by CJARS."
+      )
+    )) 
+
+### extract state abbr for hc map pull
+state_abbr <- tolower(head(df_cjars_q3_county_overall_only$state_abbr[!is.na(df_cjars_q3_county_overall_only$state_abbr)],1))
+
+```
+
+
+```{r }
+#| fig-height: 5.5
+
+### pull only state geo that we want for each param iteration
+hcmap(
+  paste0("countries/us/us-",state_abbr,"-all"),
+  data = df_cjars_q3_county_overall_only_tooltip,
+  value = "inc_ssi_y3_max_year_to_map",
+  joinBy = c("fips","county_fips"),
+  nullColor = "#E8E8E8",
+  nullInteraction = TRUE,
+  borderWidth = 0.45,
+  borderColor = "black",
+  accessibility = list(
+      point = list(
+        valueDescriptionFormat = "county: {point.acs_county_name}, rate: {point.value:.1f}"
+        )
+      )) |> 
+  hc_title(
+    text = "SSI reception rate",
+    align = "left",
+    style = list(
+      fontFamily = header_font,
+      color = "#005FAD",
+      fontSize = "24px",
+      fontWeight = "bold"
+    )
+  ) |>
+  hc_subtitle(
+    text = "Proportion of individuals who received SSI, three years after release from prison",
+    align = "left",
+    style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")
+  ) |> 
+  hc_colorAxis(endOnTick = TRUE,
+               startOnTick = TRUE,
+               stops = color_stops(4, c(blue1,
+                                        blue2,
+                                        blue4,
+                                        blue5)),
+               labels = list(format = "{value}%",
+                             style = list(fontSize = "12px",
+                                          fontFamily = default_fonts))) |> 
+  hc_legend(align = "center",
+            horizontalAlign = "bottom",
+            layout = "horizontal",
+            # title = list(text = "Percent Change"),
+            symbolHeight = 25,
+            symbolWidth = 315,
+            x = 0,
+            y = 0
+            ) |> 
+     hc_tooltip(
+        style = list(fontFamily = default_fonts),
+        formatter = JS("function() {
+        return '<div style=\"background-color: #FFFFFF; opacity: 1; padding: 8px; border: none;\">' +
+        this.point.tooltip +
+        '</div>';}"),
+        useHTML = TRUE
+      ) |>
+  hc_setup()
+
+```
+
+
+### Healthcare over time 
+
+::: {.panel-tabset}
+
+
+#### SSI  
+
+```{r }
+
+to_plot <- df_cjars_q3_state_overall_state_reentry_us |> 
+    filter(!is.na(inc_ssi_y3),
+           !is.nan(inc_ssi_y3)) |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(mean_rate = inc_ssi_y3*100,
+         group = fct_relevel(group, 
+                                          paste0("Other Reentry 2030 States"),
+                                          paste0("U.S."),
+                                          after = Inf),
+    ### create tooltip
+    tooltip = paste0(
+      "<b>", group, " – ", cohort_year, "</b><br>",
+      "SSI Reception Rate (%): ", percent(inc_ssi_y3, 1)
+      ))
+
+rng <- range(to_plot$mean_rate)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
+  
+
+### now plot
+to_plot |> 
+  hchart(
+    "spline",
+    hcaes(cohort_year, mean_rate, group = group),
+    color = jr_pal[c(1,5,7)],
+    dashStyle = c("solid","dash", "dash"),
+    opacity = c(1, 0.75, 0.75),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )      
+  ) |> 
+  hc_title(text = paste0("SSI Reception")) |>
+  hc_subtitle(
+    text = "Proportion of individuals who received SSI, three years after release from prison (averages)",
+    style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")
+  ) |> 
+  hc_caption(text = "Criminal Justice Administrative Records System (CJARS)") |>
+  hc_yAxis(labels = list(format = "{value}%")) |>
+  hc_setup()
+
+
+```
+
+
+#### Medicaid Enrollment    
+
+```{r }
+
+to_plot <- df_cjars_q3_state_overall_state_reentry_us |> 
+    filter(!is.na(inc_medicaid_y3),
+           !is.nan(inc_medicaid_y3)) |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(mean_rate = inc_medicaid_y3*100,
+         group = fct_relevel(group, 
+                                          paste0("Other Reentry 2030 States"),
+                                          paste0("U.S."),
+                                          after = Inf),
+    ### create tooltip
+    tooltip = paste0(
+      "<b>", group, " – ", cohort_year, "</b><br>",
+      "Medicaid Enrollment Rate (%): ", percent(inc_medicaid_y3, 1)
+      ))
+
+rng <- range(to_plot$mean_rate)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
+  
+
+### now plot
+to_plot |> 
+  hchart(
+    "spline",
+    hcaes(cohort_year, mean_rate, group = group),
+    color = jr_pal[c(1,5,7)],
+    dashStyle = c("solid","dash", "dash"),
+    opacity = c(1, 0.75, 0.75),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )      
+  ) |> 
+  hc_title(text = paste0("Medicaid enrollment rate")) |>
+  hc_subtitle(
+    text = "Proportion of individuals enrolled in Medicaid, three years after release from prison (averages)",
+    style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")
+  ) |> 
+  hc_caption(text = "Criminal Justice Administrative Records System (CJARS)") |>
+  hc_yAxis(labels = list(format = "{value}%")) |>
+  hc_setup()
+
+
+
+```
+
+#### Medicare Enrollment    
+
+```{r }
+
+to_plot <- df_cjars_q3_state_overall_state_reentry_us |> 
+    filter(!is.na(inc_medicare_y3),
+           !is.nan(inc_medicare_y3)) |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(mean_rate = inc_medicare_y3*100,
+         group = fct_relevel(group, 
+                                          paste0("Other Reentry 2030 States"),
+                                          paste0("U.S."),
+                                          after = Inf),
+    ### create tooltip
+    tooltip = paste0(
+      "<b>", group, " – ", cohort_year, "</b><br>",
+      "Medicaid Enrollment Rate (%): ", percent(inc_medicare_y3, 1)
+      ))
+
+rng <- range(to_plot$mean_rate)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
+  
+
+### now plot
+to_plot |> 
+  hchart(
+    "spline",
+    hcaes(cohort_year, mean_rate, group = group),
+    color = jr_pal[c(1,5,7)],
+    dashStyle = c("solid","dash", "dash"),
+    opacity = c(1, 0.75, 0.75),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )      
+  ) |> 
+  hc_title(text = paste0("Medicare enrollment")) |>
+  hc_subtitle(
+    text = "Proportion of individuals enrolled in Medicare, three years after release from prison (averages)",
+    style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")
+  ) |> 
+  hc_caption(text = "Criminal Justice Administrative Records System (CJARS)") |>
+  hc_yAxis(labels = list(format = "{value}%")) |>
+  hc_setup()
+
+
+
+```
+
+#### Mortality    
+
+```{r }
+
+to_plot <- df_cjars_q3_state_overall_state_reentry_us |> 
+    filter(!is.na(inc_mortality_y3),
+           !is.nan(inc_mortality_y3)) |> 
+  ### arrange legend so that state name comes first followed by region name
+  mutate(mean_rate = inc_mortality_y3*100,
+         group = fct_relevel(group, 
+                                          paste0("Other Reentry 2030 States"),
+                                          paste0("U.S."),
+                                          after = Inf),
+    ### create tooltip
+    tooltip = paste0(
+      "<b>", group, " – ", cohort_year, "</b><br>",
+      "Mortality Rate (%): ", percent(inc_mortality_y3, 1)
+      ))
+
+rng <- range(to_plot$mean_rate)
+mult <- diff(rng) * axis_expansion_mult
+
+y_min <- rng[1] - mult
+y_min <- if_else(y_min < 0, 0, y_min)
+y_max <- rng[2] + mult
+  
+
+### now plot
+to_plot |> 
+  hchart(
+    "spline",
+    hcaes(cohort_year, mean_rate, group = group),
+    color = jr_pal[c(1,5,7)],
+    dashStyle = c("solid","dash", "dash"),
+    opacity = c(1, 0.75, 0.75),
+    accessibility = list(
+      point = list(
+        valueDescriptionFormat = "year: {point.x:.0f}, rate: {point.y:.1f}"
+        )
+      )      
+  ) |> 
+  hc_title(text = paste0("Mortality rate")) |>
+  hc_subtitle(
+    text = "Proportion of individuals who have passed away, three years after release from prison (averages)",
+    style = list(fontFamily = default_fonts, fontSize = "16px",
+                                 color = "#666666")
+  ) |> 
+  hc_caption(text = "Criminal Justice Administrative Records System (CJARS)") |>
+  hc_yAxis(labels = list(format = "{value}%")) |>
+  hc_setup()
+
+
+
+```
+
+:::
+
+<br>
+
 

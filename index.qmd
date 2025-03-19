@@ -1202,7 +1202,7 @@ to_plot <- df_cjars_q3_state_overall_only |>
          ### create tooltip
     tooltip = paste0(
       "<b>", reentry_state_flag, " – ", cohort_year, "</b><br>",
-      "Income: ", comma(mean_rate_label, 1)
+      "Income: $", comma(mean_rate_label, 1)
       ))
 
 rng <- range(to_plot$mean_rate)
