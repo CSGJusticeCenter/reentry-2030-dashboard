@@ -31,6 +31,9 @@ library(highcharter)
 library(htmlwidgets)
 library(reactable)
 library(reactablefmtr)
+library(tidycensus)
+library(janitor)
+library(sf)
 
 source("R/utils.R")
 
@@ -161,20 +164,50 @@ df_cjars_q3_state_overall_state_reentry_us <- df_cjars_q3_state_overall_only |>
 
 ```{r }
 
-### add tooltip
+### pull in county names and population info
+### county-level file
+### pulling in population data in case we want to use it as tooltip
+us_county_population <- get_acs(
+  geography = "county",
+  variables = "S0101_C01_001",
+  year = 2022,
+  geometry = TRUE,
+  keep_geo_vars = TRUE,
+  cb = TRUE,
+  resolution = "20m") |>
+  clean_names() |>
+  mutate(state_geoid = substr(geoid, 1, 2)) |>
+  ### now drop geometry so that we can use as regular df (and not a spatial object)
+  ### we initially needed geometry in order to extract county name without label (e.g., county, parish, area, etc.)
+  st_drop_geometry() |> 
+  ### finally, keep and rename columns we'll use later
+  dplyr::select(county_fips = geoid,
+                acs_county_name = name_x,
+                acs_county_pop = estimate,
+                acs_county_state_name = state_name) |>
+  distinct() 
+
+
+### add tooltip to mapping df
 df_cjars_q3_county_overall_only_tooltip <- df_cjars_q3_county_overall_only |> 
   mutate(inc_to_inc_recid_y2_to_map = inc_to_inc_recid_y2*100) |>
-   ### filter out years/states with missing data
-  filter(!is.na(inc_to_inc_recid_y2)) |> 
-  group_by(county_fips,
-           county_name) |> 
+  ### filter out years/counties with missing data
+  filter(!is.na(inc_to_inc_recid_y2)) |>
+  group_by(county_fips) |> 
   ### now calculate % change over time from earliest year of data to latest year of data
-  summarize(min_cohort_year = min(cohort_year),
-            max_cohort_year = max(cohort_year),
+  summarize(min_cohort_year = min(cohort_year,
+                                  na.rm=TRUE),
+            max_cohort_year = max(cohort_year,
+                                  na.rm=TRUE),
             inc_to_inc_recid_y2_min_year = inc_to_inc_recid_y2[cohort_year == min_cohort_year],
             inc_to_inc_recid_y2_max_year = inc_to_inc_recid_y2[cohort_year == max_cohort_year],
             inc_to_inc_recid_y2_max_year_to_map = inc_to_inc_recid_y2_to_map[cohort_year == max_cohort_year]) |> 
   ungroup() |> 
+  ### right join in acs county file so that every county has a tooltip -- even
+  ### if they are missing data from CJARS
+  ### e.g. we want the map base file to include all counties
+  right_join(us_county_population,
+            by = "county_fips") |> 
   # ### removing counties' solved rate if they have fewer than 25 incidents reported in 2022
   # ### we want them grayed out on map
   # mutate(solved_rate_2023 = ifelse(n_reported_2023<25,
@@ -191,25 +224,25 @@ df_cjars_q3_county_overall_only_tooltip <- df_cjars_q3_county_overall_only |>
   # #               ~ ifelse(is.infinite(.x) | is.nan(.x), NA, .x))) |> 
   # # ### add '+" in front of positive numbers and 0
   # # ### only for value we'll include in tooltip
-  mutate(tooltip = paste0(
-    "<b>", county_name," – ",max_cohort_year, "</b><br>",
+  mutate(tooltip = case_when(
+    !is.na(inc_to_inc_recid_y2_max_year_to_map)==TRUE ~ paste0(
+    "<b>", acs_county_name," – ",max_cohort_year, "</b><br>",
       "2-year recidivism rate in ",min_cohort_year,": ",
       percent(inc_to_inc_recid_y2_min_year, 1),
       "<br>",
       "2-year recidivism rate in ",max_cohort_year,": ",
       percent(inc_to_inc_recid_y2_max_year, 1)
-    )
+    ),
     # n_reported_2023<25 & !is.na(n_reported_2023) ~ paste0(
     #   "Agencies in ", county_clean, " did not report enough", "<br>",
     #   "data on solved crime to the FBI to", "<br>",
     #   "make reliable estimates (fewer than 25 incidents)."
     #   ),
-    # is.na(inc_to_inc_recid_y2)==TRUE ~ paste0(
-    #   "No 2-year recidivism in ", county_name,  "<br>", 
-    #   "was reported by CJARS."
-    #   )
-    # )
-    ) 
+    is.na(inc_to_inc_recid_y2_max_year_to_map)==TRUE ~ paste0(
+       "<b>", acs_county_name, "</b><br>",
+      "No 2-year recidivism data was reported by CJARS."
+      )
+    )) 
 
 ### extract state abbr for hc map pull
 state_abbr <- tolower(head(df_cjars_q3_county_overall_only$state_abbr[!is.na(df_cjars_q3_county_overall_only$state_abbr)],1))
@@ -232,7 +265,7 @@ hcmap(
   borderColor = "black",
   accessibility = list(
       point = list(
-        valueDescriptionFormat = "county: {point.county_name}, solve rate: {point.value:.1f}"
+        valueDescriptionFormat = "county: {point.acs_county_name}, solve rate: {point.value:.1f}"
         )
       )) |> 
   hc_title(
