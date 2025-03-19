@@ -101,8 +101,8 @@
     "objectID": "index.html#reentry-numbers-by-state",
     "href": "index.html#reentry-numbers-by-state",
     "title": "Trends in Reentry",
-    "section": "Reentry Numbers by State",
-    "text": "Reentry Numbers by State\nNote: Similar to the maps, I’ve pulled metrics from the latest year available – this varies by state."
+    "section": "Reentry numbers by state",
+    "text": "Reentry numbers by state\nNote: Similar to the maps, I’ve pulled metrics from the latest year available – this varies by state."
   },
   {
     "objectID": "reentry_dashboard_state_page.html#recidivism",
@@ -173,5 +173,12 @@
     "title": "Reentry Trends in North Carolina",
     "section": "Recidivism by county",
     "text": "Recidivism by county"
+  },
+  {
+    "objectID": "reentry_dashboard_state_page.html#reentry-numbers-by-county",
+    "href": "reentry_dashboard_state_page.html#reentry-numbers-by-county",
+    "title": "Reentry Trends in North Carolina",
+    "section": "Reentry numbers by county",
+    "text": "Reentry numbers by county\nNote: Similar to the maps, I’ve pulled metrics from the latest year available – this varies by county."
   }
 ]

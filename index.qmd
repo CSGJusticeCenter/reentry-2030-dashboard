@@ -2320,7 +2320,7 @@ to_plot |>
 
 <br>
 
-## Reentry Numbers by State
+## Reentry numbers by state
 
 **Note:** Similar to the maps, I've pulled metrics from the latest year available -- this varies by state. 
 

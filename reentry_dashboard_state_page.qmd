@@ -188,11 +188,13 @@ us_county_population <- get_acs(
                 acs_county_name = name_x,
                 acs_county_pop = estimate,
                 acs_county_state_name = state_name) |>
-  distinct() 
+  distinct() |> 
+  ### filter on state param
+  filter(acs_county_state_name==state_name)
 
 
 ### add tooltip to mapping df
-df_cjars_q3_county_overall_only_tooltip <- df_cjars_q3_county_overall_only |> 
+df_cjars_q3_county_recidivism_tooltip <- df_cjars_q3_county_overall_only |> 
   mutate(inc_to_inc_recid_y2_to_map = inc_to_inc_recid_y2*100) |>
   ### filter out years/counties with missing data
   filter(!is.na(inc_to_inc_recid_y2)) |>
@@ -259,7 +261,7 @@ state_abbr <- tolower(head(df_cjars_q3_county_overall_only$state_abbr[!is.na(df_
 ### pull only state geo that we want for each param iteration
 hcmap(
   paste0("countries/us/us-",state_abbr,"-all"),
-  data = df_cjars_q3_county_overall_only_tooltip,
+  data = df_cjars_q3_county_recidivism_tooltip,
   value = "inc_to_inc_recid_y2_max_year_to_map",
   joinBy = c("fips","county_fips"),
   nullColor = "#E8E8E8",
@@ -581,7 +583,7 @@ to_plot |>
 ```{r include=FALSE}
 
 ### add tooltip to mapping df
-df_cjars_q3_county_overall_only_tooltip <- df_cjars_q3_county_overall_only |> 
+df_cjars_q3_county_employ_tooltip <- df_cjars_q3_county_overall_only |> 
   mutate(inc_above_poverty_y3_to_map = inc_above_poverty_y3*100) |>
   ### filter out years/counties with missing data
   filter(!is.na(inc_above_poverty_y3)) |>
@@ -636,9 +638,6 @@ df_cjars_q3_county_overall_only_tooltip <- df_cjars_q3_county_overall_only |>
       )
     )) 
 
-### extract state abbr for hc map pull
-state_abbr <- tolower(head(df_cjars_q3_county_overall_only$state_abbr[!is.na(df_cjars_q3_county_overall_only$state_abbr)],1))
-
 ```
 
 
@@ -648,7 +647,7 @@ state_abbr <- tolower(head(df_cjars_q3_county_overall_only$state_abbr[!is.na(df_
 ### pull only state geo that we want for each param iteration
 hcmap(
   paste0("countries/us/us-",state_abbr,"-all"),
-  data = df_cjars_q3_county_overall_only_tooltip,
+  data = df_cjars_q3_county_employ_tooltip,
   value = "inc_above_poverty_y3_max_year_to_map",
   joinBy = c("fips","county_fips"),
   nullColor = "#E8E8E8",
@@ -749,7 +748,7 @@ to_plot |>
         )
       )      
   ) |> 
-  hc_title(text = paste0("3-year poverty rates over time (averages)")) |>
+  hc_title(text = paste0("Poverty rates over time (averages)")) |>
   hc_subtitle(text = paste0("Proportion of individuals above poverty, three years after release from prison")) |>
   hc_caption(text = "Criminal Justice Administrative Records System (CJARS)") |>
   hc_yAxis(labels = list(format = "{value}%")) |>
@@ -800,7 +799,7 @@ to_plot |>
         )
       )      
   ) |> 
-  hc_title(text = paste0("3-year W2 enrollment rates over time (averages)")) |>
+  hc_title(text = paste0("W2 enrollment rates over time (averages)")) |>
   hc_subtitle(text = paste0("Proportion of individuals with at least one W2 filed, three years after release from prison")) |>
   hc_caption(text = "Criminal Justice Administrative Records System (CJARS)") |>
   hc_yAxis(labels = list(format = "{value}%")) |>
@@ -878,7 +877,7 @@ to_plot |>
 ```{r include=FALSE}
 
 ### add tooltip to mapping df
-df_cjars_q3_county_overall_only_tooltip <- df_cjars_q3_county_overall_only |> 
+df_cjars_q3_county_hud_tooltip <- df_cjars_q3_county_overall_only |> 
   mutate(inc_hud_y3_to_map = inc_hud_y3*100) |>
   ### filter out years/counties with missing data
   filter(!is.na(inc_hud_y3)) |>
@@ -933,8 +932,6 @@ df_cjars_q3_county_overall_only_tooltip <- df_cjars_q3_county_overall_only |>
       )
     )) 
 
-### extract state abbr for hc map pull
-state_abbr <- tolower(head(df_cjars_q3_county_overall_only$state_abbr[!is.na(df_cjars_q3_county_overall_only$state_abbr)],1))
 
 ```
 
@@ -945,7 +942,7 @@ state_abbr <- tolower(head(df_cjars_q3_county_overall_only$state_abbr[!is.na(df_
 ### pull only state geo that we want for each param iteration
 hcmap(
   paste0("countries/us/us-",state_abbr,"-all"),
-  data = df_cjars_q3_county_overall_only_tooltip,
+  data = df_cjars_q3_county_hud_tooltip,
   value = "inc_hud_y3_max_year_to_map",
   joinBy = c("fips","county_fips"),
   nullColor = "#E8E8E8",
@@ -1167,7 +1164,6 @@ to_plot |>
   hc_yAxis(labels = list(format = "{value}%")) |>
   hc_setup()
 
-
 ```
 
 :::
@@ -1182,7 +1178,7 @@ to_plot |>
 ```{r include=FALSE}
 
 ### add tooltip to mapping df
-df_cjars_q3_county_overall_only_tooltip <- df_cjars_q3_county_overall_only |> 
+df_cjars_q3_county_ssi_tooltip <- df_cjars_q3_county_overall_only |> 
   mutate(inc_ssi_y3_to_map = inc_ssi_y3*100) |>
   ### filter out years/counties with missing data
   filter(!is.na(inc_ssi_y3)) |>
@@ -1237,9 +1233,6 @@ df_cjars_q3_county_overall_only_tooltip <- df_cjars_q3_county_overall_only |>
       )
     )) 
 
-### extract state abbr for hc map pull
-state_abbr <- tolower(head(df_cjars_q3_county_overall_only$state_abbr[!is.na(df_cjars_q3_county_overall_only$state_abbr)],1))
-
 ```
 
 
@@ -1249,7 +1242,7 @@ state_abbr <- tolower(head(df_cjars_q3_county_overall_only$state_abbr[!is.na(df_
 ### pull only state geo that we want for each param iteration
 hcmap(
   paste0("countries/us/us-",state_abbr,"-all"),
-  data = df_cjars_q3_county_overall_only_tooltip,
+  data = df_cjars_q3_county_ssi_tooltip,
   value = "inc_ssi_y3_max_year_to_map",
   joinBy = c("fips","county_fips"),
   nullColor = "#E8E8E8",
@@ -1537,4 +1530,64 @@ to_plot |>
 
 <br>
 
+## Reentry numbers by county
 
+**Note:** Similar to the maps, I've pulled metrics from the latest year available -- this varies by county.
+
+```{r}
+
+### combine dfs used for maps -- pulling metric from latest year available
+### for each given metric (which we already did df by df above)
+
+### first create list of all dfs to join via state name/fips
+df_cjars_map_data_list <- list(df_cjars_q3_county_ssi_tooltip,
+                               df_cjars_q3_county_recidivism_tooltip, 
+                               df_cjars_q3_county_employ_tooltip,
+                               df_cjars_q3_county_hud_tooltip) 
+
+
+### now merge all dfs -- keeping all states with at least one data point (via all = TRUE)
+### select columns needed for table
+df_cjars_q3_state_overall_only_to_table <- purrr::reduce(.x = df_cjars_map_data_list, 
+                                                         merge, 
+                                                         by = c("acs_county_name",
+                                                                "county_fips",
+                                                                "acs_county_state_name"), 
+                                                         all = TRUE) |> 
+  dplyr::select(acs_county_name,
+                county_fips,
+                inc_to_inc_recid_y2_max_year_to_map,
+                inc_above_poverty_y3_max_year_to_map,
+                inc_hud_y3_max_year_to_map,
+                inc_ssi_y3_max_year_to_map) |> 
+  ### there are some pure duplicates based on differing min and max cohort years 
+  ### this doesn't impact the current table/analysis/need
+  distinct()
+
+
+### create state-level table
+df_cjars_q3_state_overall_only_to_table |> 
+    dplyr::select(acs_county_name,
+           inc_to_inc_recid_y2_max_year_to_map,
+           inc_above_poverty_y3_max_year_to_map,
+           inc_hud_y3_max_year_to_map,
+           inc_ssi_y3_max_year_to_map) |> 
+  reactable_template(
+    sort_col = list("acs_county_name" = "asc"),
+    columns = list(
+      acs_county_name = colDef(name = "County"),
+      inc_to_inc_recid_y2_max_year_to_map = colDef(name = "2-Year Recidivism Rate",
+        format = colFormat(suffix = "%", digits = 0)), 
+      inc_above_poverty_y3_max_year_to_map = colDef(name = "Poverty Rate (above poverty)",
+        format = colFormat(suffix = "%", digits = 0)), 
+      inc_hud_y3_max_year_to_map = colDef(name = "HUD Assistance Rate",
+        format = colFormat(suffix = "%", digits = 1)), 
+      inc_ssi_y3_max_year_to_map = colDef(name = "SSI Rate",
+        format = colFormat(suffix = "%", digits = 1))
+      )
+    )
+
+```
+
+
+<br>
