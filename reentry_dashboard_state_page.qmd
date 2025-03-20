@@ -158,6 +158,8 @@ df_cjars_q3_state_overall_state_reentry_us <- df_cjars_q3_state_overall_only |>
 
 **Note:** Throughout this analysis, I've used the earliest and latest year with available data -- this appears to differ depending on the county and metric. When possible, I've indicated the specific years used in the visual's tooltips. We may end up just wanting to include a single set of years (e.g. 2000 as earliest and 2021 as latest) to have consistency. 
 
+I've used the 6 states listed on the reentry 2030 site (https://reentry2030.org/) as the group of reentry states throughout the analysis. Missouri and Alabama, though, appear to be missing from CJARS data so they're excluded from all analysis. 
+
 <br>
 
 ## Recidivism
